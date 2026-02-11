@@ -9,205 +9,56 @@ import DB_connections.*;
 public class StudentDashboard extends JFrame {
 
     private String rollNum;
-    private DefaultTableModel driveModel, appModel;
-    private JTextField fName, fAge, fMajor, fGPA, fEmail;
+    private JPanel contentPanel;
 
-    public StudentDashboard(String rollNum, String studentName) {
+    public StudentDashboard(String rollNum, String name) {
         this.rollNum = rollNum;
-
-        setTitle("Student Dashboard - " + studentName);
-        setSize(850, 550);
+        setTitle("Welcome, " + name);
+        setSize(750, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Profile", buildProfileTab());
-        tabs.addTab("Available Drives", buildDrivesTab());
-        tabs.addTab("My Applications", buildApplicationsTab());
-
-        // top bar
-        JPanel topBar = new JPanel(new BorderLayout());
-        JLabel titleLbl = new JLabel("  Welcome, " + studentName);
-        titleLbl.setFont(new Font("SansSerif", Font.BOLD, 16));
+        // Menu buttons at the top
+        JPanel menuPanel = new JPanel(new FlowLayout());
+        JButton profileBtn = new JButton("My Profile");
+        JButton drivesBtn = new JButton("Available Drives");
+        JButton appsBtn = new JButton("My Applications");
         JButton logoutBtn = new JButton("Logout");
+        menuPanel.add(profileBtn);
+        menuPanel.add(drivesBtn);
+        menuPanel.add(appsBtn);
+        menuPanel.add(logoutBtn);
+
+        contentPanel = new JPanel(new BorderLayout());
+
+        profileBtn.addActionListener(e -> showProfile());
+        drivesBtn.addActionListener(e -> showDrives());
+        appsBtn.addActionListener(e -> showApplications());
         logoutBtn.addActionListener(e -> {
             dispose();
             new LoginFrame();
         });
-        topBar.add(titleLbl, BorderLayout.WEST);
-        topBar.add(logoutBtn, BorderLayout.EAST);
 
-        add(topBar, BorderLayout.NORTH);
-        add(tabs, BorderLayout.CENTER);
-
-        loadProfile();
-        loadDrives();
-        loadApplications();
+        add(menuPanel, BorderLayout.NORTH);
+        add(contentPanel, BorderLayout.CENTER);
+        showProfile();
         setVisible(true);
     }
 
-    // ==================== Profile Tab ====================
-    private JPanel buildProfileTab() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+    // ---- Profile Section ----
+    private void showProfile() {
+        JPanel panel = new JPanel(new GridLayout(7, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
         JTextField fRoll = new JTextField(rollNum);
         fRoll.setEditable(false);
-        fName = new JTextField(20);
-        fAge = new JTextField(20);
-        fMajor = new JTextField(20);
-        fGPA = new JTextField(20);
-        fEmail = new JTextField(20);
+        JTextField fName = new JTextField();
+        JTextField fAge = new JTextField();
+        JTextField fMajor = new JTextField();
+        JTextField fGPA = new JTextField();
+        JTextField fEmail = new JTextField();
 
-        String[] labels = { "Roll No:", "Name:", "Age:", "Major:", "GPA:", "Email:" };
-        JTextField[] fields = { fRoll, fName, fAge, fMajor, fGPA, fEmail };
-
-        for (int i = 0; i < labels.length; i++) {
-            gbc.gridx = 0;
-            gbc.gridy = i;
-            panel.add(new JLabel(labels[i]), gbc);
-            gbc.gridx = 1;
-            panel.add(fields[i], gbc);
-        }
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton refreshBtn = new JButton("Refresh");
-        JButton saveBtn = new JButton("Save");
-        btnPanel.add(refreshBtn);
-        btnPanel.add(saveBtn);
-
-        gbc.gridx = 0;
-        gbc.gridy = labels.length;
-        gbc.gridwidth = 2;
-        panel.add(btnPanel, gbc);
-
-        refreshBtn.addActionListener(e -> loadProfile());
-        saveBtn.addActionListener(e -> saveProfile());
-
-        return panel;
-    }
-
-    // ==================== Drives Tab ====================
-    private JPanel buildDrivesTab() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        driveModel = new DefaultTableModel(
-                new String[] { "Drive ID", "Company", "Start Date", "End Date", "Seats", "LPA", "Min GPA" }, 0) {
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        JTable table = new JTable(driveModel);
-        JScrollPane sp = new JScrollPane(table);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton applyBtn = new JButton("Apply");
-        JButton refreshBtn = new JButton("Refresh");
-        btnPanel.add(applyBtn);
-        btnPanel.add(refreshBtn);
-
-        applyBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) {
-                msg("Select a drive first.");
-                return;
-            }
-            int driveId = (int) driveModel.getValueAt(row, 0);
-            double minGpa = (double) driveModel.getValueAt(row, 6);
-
-            // check student GPA
-            try {
-                ResultSet rs = StudentDB.getStudentByRoll(rollNum);
-                if (rs != null && rs.next()) {
-                    double myGpa = rs.getDouble("gpa");
-                    if (myGpa < minGpa) {
-                        msg("Your GPA (" + myGpa + ") is below the minimum (" + minGpa + ").");
-                        return;
-                    }
-                }
-            } catch (SQLException ex) {
-                msg("Error checking GPA: " + ex.getMessage());
-                return;
-            }
-
-            // check duplicate
-            if (ApplicationDB.hasApplied(rollNum, driveId)) {
-                msg("You have already applied to this drive.");
-                return;
-            }
-
-            if (ApplicationDB.addApplication(driveId, rollNum)) {
-                msg("Applied successfully!");
-                loadApplications();
-            } else {
-                msg("Failed to apply.");
-            }
-        });
-
-        refreshBtn.addActionListener(e -> loadDrives());
-
-        panel.add(btnPanel, BorderLayout.NORTH);
-        panel.add(sp, BorderLayout.CENTER);
-        return panel;
-    }
-
-    // ==================== Applications Tab ====================
-    private JPanel buildApplicationsTab() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        appModel = new DefaultTableModel(
-                new String[] { "App ID", "Drive ID", "Company", "Date", "Status" }, 0) {
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        JTable table = new JTable(appModel);
-        JScrollPane sp = new JScrollPane(table);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton withdrawBtn = new JButton("Withdraw");
-        JButton refreshBtn = new JButton("Refresh");
-        btnPanel.add(withdrawBtn);
-        btnPanel.add(refreshBtn);
-
-        withdrawBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0) {
-                msg("Select an application first.");
-                return;
-            }
-            String status = (String) appModel.getValueAt(row, 4);
-            if (!"Applied".equals(status)) {
-                msg("Can only withdraw applications with 'Applied' status.");
-                return;
-            }
-            int appId = (int) appModel.getValueAt(row, 0);
-            if (JOptionPane.showConfirmDialog(this, "Withdraw this application?",
-                    "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-                if (ApplicationDB.deleteApplication(appId)) {
-                    msg("Application withdrawn.");
-                    loadApplications();
-                } else {
-                    msg("Failed to withdraw.");
-                }
-            }
-        });
-
-        refreshBtn.addActionListener(e -> loadApplications());
-
-        panel.add(btnPanel, BorderLayout.NORTH);
-        panel.add(sp, BorderLayout.CENTER);
-        return panel;
-    }
-
-    // ==================== Data Loading ====================
-    private void loadProfile() {
+        // load current data from DB
         try {
             ResultSet rs = StudentDB.getStudentByRoll(rollNum);
             if (rs != null && rs.next()) {
@@ -220,57 +71,143 @@ public class StudentDashboard extends JFrame {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-    }
 
-    private void saveProfile() {
-        try {
-            int age = Integer.parseInt(fAge.getText().trim());
-            double gpa = Double.parseDouble(fGPA.getText().trim());
-            if (StudentDB.updateStudent(rollNum, fName.getText().trim(), age,
-                    fMajor.getText().trim(), gpa, fEmail.getText().trim())) {
-                msg("Profile updated.");
-            } else {
-                msg("Update failed.");
+        panel.add(new JLabel("Roll No:"));
+        panel.add(fRoll);
+        panel.add(new JLabel("Name:"));
+        panel.add(fName);
+        panel.add(new JLabel("Age:"));
+        panel.add(fAge);
+        panel.add(new JLabel("Major:"));
+        panel.add(fMajor);
+        panel.add(new JLabel("GPA:"));
+        panel.add(fGPA);
+        panel.add(new JLabel("Email:"));
+        panel.add(fEmail);
+
+        JButton saveBtn = new JButton("Save Changes");
+        saveBtn.addActionListener(e -> {
+            try {
+                StudentDB.updateStudent(rollNum, fName.getText().trim(),
+                        Integer.parseInt(fAge.getText().trim()), fMajor.getText().trim(),
+                        Double.parseDouble(fGPA.getText().trim()), fEmail.getText().trim());
+                msg("Profile updated!");
+            } catch (NumberFormatException ex) {
+                msg("Age must be integer, GPA must be a number.");
             }
-        } catch (NumberFormatException ex) {
-            msg("Age must be integer, GPA must be a number.");
-        }
+        });
+        panel.add(saveBtn);
+        panel.add(new JLabel());
+
+        contentPanel.removeAll();
+        contentPanel.add(panel, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
-    private void loadDrives() {
-        driveModel.setRowCount(0);
+    // ---- Available Drives Section ----
+    private void showDrives() {
+        DefaultTableModel model = new DefaultTableModel(
+                new String[] { "Drive ID", "Company", "Start", "End", "Seats", "LPA", "Min GPA" }, 0);
+        JTable table = new JTable(model);
+
         try {
             ResultSet rs = DriveDB.getAllDrives();
-            if (rs == null)
-                return;
-            while (rs.next()) {
-                driveModel.addRow(new Object[] {
-                        rs.getInt("D_id"), rs.getString("cname"),
+            while (rs != null && rs.next()) {
+                model.addRow(new Object[] { rs.getInt("D_id"), rs.getString("cname"),
                         rs.getString("start_date"), rs.getString("end_date"),
-                        rs.getInt("availableSeats"), rs.getDouble("lpa"), rs.getDouble("mingpa")
-                });
+                        rs.getInt("availableSeats"), rs.getDouble("lpa"),
+                        rs.getDouble("mingpa") });
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+
+        JButton applyBtn = new JButton("Apply to Drive");
+        applyBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) {
+                msg("Select a drive first.");
+                return;
+            }
+            int driveId = (int) model.getValueAt(row, 0);
+            double minGpa = (double) model.getValueAt(row, 6);
+
+            // check GPA
+            try {
+                ResultSet rs = StudentDB.getStudentByRoll(rollNum);
+                if (rs != null && rs.next() && rs.getDouble("gpa") < minGpa) {
+                    msg("Your GPA is below the minimum required (" + minGpa + ").");
+                    return;
+                }
+            } catch (SQLException ex) {
+                msg("Error: " + ex.getMessage());
+                return;
+            }
+
+            // check duplicate
+            if (ApplicationDB.hasApplied(rollNum, driveId)) {
+                msg("You already applied to this drive.");
+                return;
+            }
+            if (ApplicationDB.addApplication(driveId, rollNum)) {
+                msg("Applied successfully!");
+            } else {
+                msg("Failed to apply.");
+            }
+        });
+
+        JPanel bp = new JPanel(new FlowLayout());
+        bp.add(applyBtn);
+
+        contentPanel.removeAll();
+        contentPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        contentPanel.add(bp, BorderLayout.SOUTH);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
-    private void loadApplications() {
-        appModel.setRowCount(0);
+    // ---- My Applications Section ----
+    private void showApplications() {
+        DefaultTableModel model = new DefaultTableModel(
+                new String[] { "App ID", "Drive", "Company", "Date", "Status" }, 0);
+        JTable table = new JTable(model);
+
         try {
             ResultSet rs = ApplicationDB.getApplicationsByStudent(rollNum);
-            if (rs == null)
-                return;
-            while (rs.next()) {
-                appModel.addRow(new Object[] {
-                        rs.getInt("A_id"), rs.getInt("driveId"),
+            while (rs != null && rs.next()) {
+                model.addRow(new Object[] { rs.getInt("A_id"), rs.getInt("driveId"),
                         rs.getString("cname"), rs.getString("applicationDate"),
-                        rs.getString("status")
-                });
+                        rs.getString("status") });
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+
+        JButton withdrawBtn = new JButton("Withdraw");
+        withdrawBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) {
+                msg("Select an application first.");
+                return;
+            }
+            if (!"Applied".equals(model.getValueAt(row, 4))) {
+                msg("Can only withdraw 'Applied' applications.");
+                return;
+            }
+            ApplicationDB.deleteApplication((int) model.getValueAt(row, 0));
+            msg("Application withdrawn.");
+            showApplications();
+        });
+
+        JPanel bp = new JPanel(new FlowLayout());
+        bp.add(withdrawBtn);
+
+        contentPanel.removeAll();
+        contentPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        contentPanel.add(bp, BorderLayout.SOUTH);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void msg(String m) {

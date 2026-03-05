@@ -12,24 +12,58 @@ public class AdminDashboard extends JFrame {
 
     public AdminDashboard() {
         setTitle("Admin Dashboard");
-        setSize(800, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setResizable(false);
 
-        // Menu buttons at the top
-        JPanel menuPanel = new JPanel(new FlowLayout());
+        // Create main panel with gradient background
+        JPanel mainPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(108, 92, 231),
+                    getWidth(), getHeight(), new Color(162, 155, 254)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        mainPanel.setLayout(new BorderLayout());
+
+        // Menu buttons at the top with colors
+        JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        menuPanel.setBackground(new Color(70, 60, 180));
         JButton studentsBtn = new JButton("Students");
+        styleNavButton(studentsBtn, new Color(100, 200, 200));
         JButton companiesBtn = new JButton("Companies");
+        styleNavButton(companiesBtn, new Color(100, 200, 200));
         JButton drivesBtn = new JButton("Drives");
+        styleNavButton(drivesBtn, new Color(100, 200, 200));
         JButton appsBtn = new JButton("Applications");
+        styleNavButton(appsBtn, new Color(100, 200, 200));
         JButton logoutBtn = new JButton("Logout");
+        styleNavButton(logoutBtn, new Color(220, 100, 100));
         menuPanel.add(studentsBtn);
         menuPanel.add(companiesBtn);
         menuPanel.add(drivesBtn);
         menuPanel.add(appsBtn);
+        menuPanel.add(Box.createHorizontalGlue());
         menuPanel.add(logoutBtn);
 
-        contentPanel = new JPanel(new BorderLayout());
+        contentPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setColor(new Color(255, 255, 255, 10));
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        contentPanel.setOpaque(false);
 
         studentsBtn.addActionListener(e -> showStudents());
         companiesBtn.addActionListener(e -> showCompanies());
@@ -40,8 +74,9 @@ public class AdminDashboard extends JFrame {
             new LoginFrame();
         });
 
-        add(menuPanel, BorderLayout.NORTH);
-        add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(menuPanel, BorderLayout.NORTH);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
+        add(mainPanel);
         showStudents();
         setVisible(true);
     }
@@ -73,7 +108,13 @@ public class AdminDashboard extends JFrame {
         }
 
         JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setBackground(new Color(220, 20, 60)); // Crimson
+        deleteBtn.setForeground(Color.WHITE);
+        deleteBtn.setFocusPainted(false);
         JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.setBackground(new Color(70, 130, 180)); // Steel blue
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setFocusPainted(false);
 
         deleteBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
@@ -111,8 +152,17 @@ public class AdminDashboard extends JFrame {
         }
 
         JButton addBtn = new JButton("Add");
+        addBtn.setBackground(new Color(50, 205, 50)); // Lime green
+        addBtn.setForeground(Color.WHITE);
+        addBtn.setFocusPainted(false);
         JButton editBtn = new JButton("Edit");
+        editBtn.setBackground(new Color(255, 215, 0)); // Gold
+        editBtn.setForeground(Color.BLACK);
+        editBtn.setFocusPainted(false);
         JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setBackground(new Color(220, 20, 60)); // Crimson
+        deleteBtn.setForeground(Color.WHITE);
+        deleteBtn.setFocusPainted(false);
 
         addBtn.addActionListener(e -> {
             JTextField fN = new JTextField(), fL = new JTextField(),
@@ -180,7 +230,13 @@ public class AdminDashboard extends JFrame {
         }
 
         JButton addBtn = new JButton("Create Drive");
+        addBtn.setBackground(new Color(50, 205, 50)); // Lime green
+        addBtn.setForeground(Color.WHITE);
+        addBtn.setFocusPainted(false);
         JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setBackground(new Color(220, 20, 60)); // Crimson
+        deleteBtn.setForeground(Color.WHITE);
+        deleteBtn.setFocusPainted(false);
 
         addBtn.addActionListener(e -> {
             JComboBox<String> cb = new JComboBox<>();
@@ -190,6 +246,13 @@ public class AdminDashboard extends JFrame {
                     cb.addItem(rs.getInt("id") + " - " + rs.getString("name"));
             } catch (SQLException ex) {
                 ex.printStackTrace();
+            }
+
+            if (cb.getItemCount() == 0) {
+                JOptionPane.showMessageDialog(this,
+                        "No companies registered yet.\nPlease add a company before creating a drive.",
+                        "No Companies", JOptionPane.WARNING_MESSAGE);
+                return; // abort creation
             }
 
             JTextField fS = new JTextField("YYYY-MM-DD"), fE = new JTextField("YYYY-MM-DD"),
@@ -237,7 +300,13 @@ public class AdminDashboard extends JFrame {
         JComboBox<String> filterBox = new JComboBox<>(
                 new String[] { "All", "Applied", "Shortlisted", "Accepted", "Rejected" });
         JButton filterBtn = new JButton("Filter");
+        filterBtn.setBackground(new Color(70, 130, 180)); // Steel blue
+        filterBtn.setForeground(Color.WHITE);
+        filterBtn.setFocusPainted(false);
         JButton statusBtn = new JButton("Update Status");
+        statusBtn.setBackground(new Color(255, 140, 0)); // Dark orange
+        statusBtn.setForeground(Color.WHITE);
+        statusBtn.setFocusPainted(false);
 
         filterBtn.addActionListener(e -> {
             String f = (String) filterBox.getSelectedItem();
@@ -281,6 +350,15 @@ public class AdminDashboard extends JFrame {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void styleNavButton(JButton btn, Color bgColor) {
+        btn.setFont(new Font("Arial", Font.BOLD, 12));
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     private void msg(String m) {

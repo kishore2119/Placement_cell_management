@@ -4,7 +4,7 @@ CREATE TABLE student (
     age INTEGER,
     major VARCHAR(100) NOT NULL,
     gpa DECIMAL(4, 2) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE
+    password VARCHAR(150) NOT NULL
 );
 
 CREATE TABLE company (

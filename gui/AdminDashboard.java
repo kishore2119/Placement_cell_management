@@ -92,8 +92,9 @@ public class AdminDashboard extends JFrame {
 
     // ---- Students Section ----
     private void showStudents() {
+        // table columns match current schema (no email stored)
         DefaultTableModel model = new DefaultTableModel(
-                new String[] { "Roll No", "Name", "Age", "Major", "GPA", "Email" }, 0);
+                new String[] { "Roll No", "Name", "Age", "Major", "GPA" }, 0);
         JTable table = new JTable(model);
 
         try {
@@ -101,7 +102,7 @@ public class AdminDashboard extends JFrame {
             while (rs != null && rs.next()) {
                 model.addRow(new Object[] { rs.getString("rollnum"), rs.getString("name"),
                         rs.getInt("age"), rs.getString("major"),
-                        rs.getDouble("gpa"), rs.getString("email") });
+                        rs.getDouble("gpa") });
             }
         } catch (SQLException ex) {
             ex.printStackTrace();

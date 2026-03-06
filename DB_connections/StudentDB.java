@@ -63,7 +63,8 @@ public class StudentDB {
     }
 
     // Update
-    public static boolean updateStudent(String rollnum, String name, int age, String major, double gpa, String email) {
+    // email parameter was previously unused since schema doesn't include email.
+    public static boolean updateStudent(String rollnum, String name, int age, String major, double gpa) {
         try (Connection c = connecton.getConnection()) {
             PreparedStatement ps = c.prepareStatement(
                     "UPDATE student SET name=?, age=?, major=?, gpa=? WHERE rollnum=?");

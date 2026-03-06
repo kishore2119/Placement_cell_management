@@ -193,7 +193,7 @@ public class StudentDashboard extends JFrame {
             try {
                 StudentDB.updateStudent(rollNum, fName.getText().trim(),
                         Integer.parseInt(fAge.getText().trim()), fMajor.getText().trim(),
-                        Double.parseDouble(fGPA.getText().trim()), "");
+                        Double.parseDouble(fGPA.getText().trim()));
                 JOptionPane.showMessageDialog(this, "Profile updated!", "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Age must be integer, GPA must be a number.", "Error", JOptionPane.ERROR_MESSAGE);
